@@ -1,0 +1,25 @@
+<html>
+    <body>
+        <canvas width="600" height="450"
+        style = "border: solid 1px red"
+        id="canvas"></canvas>
+        <br>
+        <button onclick="saveLevel()">Save Level</button>
+        <input id="levelName">
+        <br>
+        <button onclick="loadLevel()">Load Level</button>
+        <select id="levelSelectDropdown"></select>
+        <br>
+        <p>-----------</p>
+        <br>
+        <image src="cursors.png" id="cursorPalate"></image>
+        <br>
+        <!--<img src="world.png" id="selectPalate">-->
+        <canvas id="selectPalate" width="360" height="300"></canvas>
+        
+        <script src="main.js"></script>
+        <script src="render.js"></script>
+        <script src="physics.js"></script>
+        <script src="levelEditor.js"></script>
+    </body>
+</html>
