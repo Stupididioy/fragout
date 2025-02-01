@@ -40,6 +40,11 @@ function updateCollisions() {
                     hitBoxes.push({x1:object.x, x2:object.x+30, y1: object.y, y2: object.y+30, type: 0})
                     break;
                 }
+            case 2:
+                {
+                    hitBoxes.push({x1: object.x, x2: object.x+90, y1: object.y, y2: object.y+60, type: 0});
+                    break;
+                }
                 
         }
     }
@@ -72,6 +77,9 @@ function playerPhysics() {
 
     player.velx = tri-Math.sign(tri)*(player.velx-tri)/2;
 
+    player.velx = Math.min(30,Math.max(player.velx,-30))
+    player.vely = Math.min(30,Math.max(player.vely,-30))
+
     player.vely++;
 
     player.x+=player.velx;
@@ -92,7 +100,7 @@ function playerPhysics() {
     }
 
     if (playerGrabbedObject != -1) {
-        var disVec = {x: cursor.x - player.x - 10, y: cursor.y - player.y - 20};
+        var disVec = {x: cursor.x - player.x - 10 + camera.x, y: cursor.y - player.y - 20 + camera.y};
     
         var disLength = Math.sqrt(Math.pow(disVec.x,2)+Math.pow(disVec.y,2)); //disVec modulus
     
@@ -140,14 +148,38 @@ function handleObjects()
                 }
             case 1:
                 {
-                    handleObjFalling(object);
+                    if (object.state.colTimer <= 0)
+                    {
+                        handleObjFalling(object, i);
+                        object.state.grabbable = true;
+                    } else {
+                        object.state.colTimer--;
+                        object.state.grabbable = false;
+
+                        object.state.vely++;
+                        object.y += object.state.vely;
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    var cube = objects[object.state.cubeIndex];
+                    if (cube.y > levelStats.height*30+30) // cube is below map
+                    {
+                        cube.x = object.x+30;
+                        cube.y = object.y+29;
+                        cube.state.velx = 0;
+                        cube.state.vely = -12;
+                        cube.state.colTimer = 13;
+                    }
                 }
         }
     }
 }
 
-function handleObjFalling(object) //object.state must have velx, vely, 
+function handleObjFalling(object, i) //object.state must have velx, vely, 
                                        // and sizeX, sizeY variables
+                                       // i is index of this object in objects array
 {
     let getCollision = function (object)
     { return {
@@ -157,19 +189,23 @@ function handleObjFalling(object) //object.state must have velx, vely,
         y2: object.y+object.state.sizeY} };
 
 
+    object.state.velx = Math.min(15,Math.max(object.state.velx,-15))
+    object.state.vely = Math.min(15,Math.max(object.state.vely,-15))
     object.state.vely++;
 
+    var collisionThreshold = (playerGrabbedObject != i) ? 1 : 0
+    
     object.x+=object.state.velx;
-    if (touchingGround(getCollision(object)).length>1)
+    if (touchingGround(getCollision(object)).length>collisionThreshold)
     {
         object.x-=object.state.velx;
         object.state.velx = 0;
     }
 
-    object.y += object.state.vely;
-    if (touchingGround(getCollision(object)).length>1)
+    object.y+=object.state.vely;
+    if (touchingGround(getCollision(object)).length>collisionThreshold)
     {
-        object.y -= object.state.vely;
+        object.y-=object.state.vely;
         object.state.vely = 0;
     }
 
@@ -192,7 +228,7 @@ function pressE()
 
     // dis means displacement, not "this" in a new york accent!!!
 
-    var disVec = {x: cursor.x - player.x - 10, y: cursor.y - player.y - 20};
+    var disVec = {x: cursor.x - player.x - 10 + camera.x, y: cursor.y - player.y - 20 + camera.y};
 
     var disLength = Math.sqrt(Math.pow(disVec.x,2)+Math.pow(disVec.y,2)); //disVec modulus
 
@@ -205,9 +241,8 @@ function pressE()
     {
         var curCheckLocation = {x: player.x+10+d*disVec.x, y: player.y+20+d*disVec.y};
 
-        if (touchingGround({x1: curCheckLocation, x2: curCheckLocation, y1: curCheckLocation, y2: curCheckLocation}).length)
+        if (touchingGround({x1: curCheckLocation, x2: curCheckLocation+1, y1: curCheckLocation, y2: curCheckLocation+1}).length)
         {
-            console.log("PressE Touched Wall!!! x: " + curCheckLocation.x + ", y: " + curCheckLocation.y);
             break;
         } // if touch wall, stop now before grabbing stuff through walls is allowed!!!!! (i hope)
 
@@ -221,17 +256,14 @@ function pressE()
             ) {
                 if ([1,2,3].includes(object.type)) {
                     if (object.state.grabbable) {
-                        console.log("PressE grabbed: " + i);
                         playerGrabbedObject = i;
                         loopDone = true;
                         break;
                     } else {
-                        console.log("PressE tried to grab the ungrabbable");
                         loopDone = true;
                         break;
                     }
                 } else {
-                    console.log("PressE tried to grab a normal objectaaaaa");
                     loopDone = true;
                     break;
                 }
@@ -241,13 +273,5 @@ function pressE()
 
     if (d >= 64)
     {
-        console.log("PressE Found no object! x: " + (player.x+d*disVec.x) + ", y: " + (player.y+d*disVec.y));
-        console.log(disVec.x);
-        console.log(disVec.y);
-        console.log(disLength);
-
-        console.log("-----------------")
-        console.log(cursor.x - player.x - 10);
-        console.log(cursor.y - player.y - 8);
     }
 }

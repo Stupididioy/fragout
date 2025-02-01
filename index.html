@@ -4,6 +4,8 @@
         style = "border: solid 1px red"
         id="canvas"></canvas>
         <br>
+        <button id="ModeButton">Edit Level</button>
+        <div id="levelEditDiv" style="display:none">
         <button onclick="saveLevel()">Save Level</button>
         <input id="levelName">
         <br>
@@ -16,7 +18,22 @@
         <br>
         <!--<img src="world.png" id="selectPalate">-->
         <canvas id="selectPalate" width="360" height="300"></canvas>
-        
+
+        <div id="objectEditDiv" width="600px">
+            <!--<div id="objectEditSelect" style="overflow-y: auto; border: red solid 1px" width="100px">
+
+            </div>-->
+
+            <div id="objectEditMode" style="overflow-y: auto; border: red solid 1px; display:inline-block" width="100px">
+
+            </div>
+
+            <div id="objectEditInputDiv" style="overflow-y: auto; border: red solid 1px; display: inline-block" width="400px">
+                <input id="objectEditInput">
+                <button onclick="submitObjectEditInput()">Submit</button>
+            </div>
+        </div>
+        </div>
         <script src="main.js"></script>
         <script src="render.js"></script>
         <script src="physics.js"></script>
