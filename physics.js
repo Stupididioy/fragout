@@ -127,7 +127,7 @@ function handleObjects()
 
         switch (object.type)
         {
-            case 0:
+            case 0: // teleporter
                 {
                     if (object.state.activated && 
                         testCollision(getPlayerCollision(),
@@ -146,7 +146,7 @@ function handleObjects()
 
                     break;
                 }
-            case 1:
+            case 1: // cube
                 {
                     if (object.state.colTimer <= 0)
                     {
@@ -161,7 +161,7 @@ function handleObjects()
                     }
                     break;
                 }
-            case 2:
+            case 2: // cube spawner
                 {
                     var cube = objects[object.state.cubeIndex];
                     if (cube.y > levelStats.height*30+30) // cube is below map
@@ -171,6 +171,22 @@ function handleObjects()
                         cube.state.velx = 0;
                         cube.state.vely = -12;
                         cube.state.colTimer = 13;
+                    }
+                }
+            case 3: // cube scanner
+                {
+                    var col = {x1: object.x+10, x2: object.x + 20, y1: object.y, y2: object.y + 30 * object.state.range};
+                    object.state.on = false;
+                    for (var j = 0; j < objects.length; j++)
+                    {
+                        var object1 = objects[j];
+                        if ((object1.type == 1) && (object.state.color == object1.state.color))
+                        {
+                            if (testCollision(col, {x1: object1.x, x2: object1.x+30, y1: object1.y, y2: object1.y+30}))
+                            {
+                                object.state.on = true;
+                            }
+                        }
                     }
                 }
         }
@@ -273,5 +289,44 @@ function pressE()
 
     if (d >= 64)
     {
+    }
+}
+
+function tickConnections()
+{
+    var objectConnectionAmounts = [];
+    var objectConnectionThresholds = [];
+    var objectSortedByName = [];
+    for (var i = 0; i < objects.length; i++)
+    {
+        objectConnectionAmounts.push(0);
+        objectConnectionThresholds.push(0);
+        if (objects[i].name)
+        {
+            objectSortedByName[objects[i].name] = i;
+        }
+    }
+
+
+    for (var i = 0; i < connections.length; i++)
+    {
+        var conn = connections[i]; //conn = connection but abbr.
+        var input  = objects[objectSortedByName[conn.input]];
+
+        if (input.state.on)
+        {
+            objectConnectionAmounts[objectSortedByName[conn.output]] += input.state.on;
+        }
+
+        objectConnectionThresholds[objectSortedByName[conn.output]] += 1;
+    }
+
+    for (var i = 0; i < objects.length; i++)
+    {
+        if (objectConnectionThresholds[i])
+        {
+            objects[i].state.activated = (objectConnectionAmounts[i] == objectConnectionThresholds[i])
+                ? true : false;
+        }
     }
 }

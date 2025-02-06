@@ -1,22 +1,17 @@
 var cursor = {x: 0, y: 0, type: -1, id: 0};
+
+var latestConnectionName = 0;
+
 document.getElementById("selectPalate").addEventListener('mousedown', function (event) {
-    switch (cursor.type)
-    {
-        case 0:
-            {
-                cursor.id =    Math.floor((event.offsetX)/30);
-                cursor.id+= 12*Math.floor((event.offsetY)/30);
-                break;
-            }
-        case 1:
-            {
-                cursor.id = placeableObjects[Math.floor(event.offsetX/30)];
-            }
-    }
+    cursor.id = placeableObjects[Math.floor(event.offsetX/30)];
 })
 
-var placeableObjects = [0,2];
+document.getElementById("tileSelect").addEventListener('mousedown', function (event) {
+    cursor.id =    Math.floor((event.offsetX)/30);
+    cursor.id+= 12*Math.floor((event.offsetY)/30);
+})
 
+var placeableObjects = [0,2,3];
 document.getElementById("cursorPalate").addEventListener('mousedown', function (event) 
 {
     cursor.type = Math.floor(event.offsetX/30);
@@ -27,22 +22,20 @@ document.getElementById("cursorPalate").addEventListener('mousedown', function (
 
     switch (cursor.type)
     {
-        case 0: {
-            selectPalate.width = worldPNG.width ;
-            selectPalate.height= worldPNG.height;
-            selectPalateCTX.drawImage(worldPNG, 0, 0);
-            break;
-        }
-
         case 1: {
             selectPalate.width = 120;
             selectPalate.height= 30;
-            selectPalateCTX.drawImage(objectPNG,90,150,90,30,0,0,30,30);
+            selectPalateCTX.drawImage(objectPNG,90,150,90,30,0 ,0,30,30);
+            selectPalateCTX.drawImage(objectPNG, 0,120,90,60,30,0,30,30);
         }
     }
     
-    document.getElementById("selectPalate" ).style = ((cursor.type == 2) ? "display: none" : "display: block");
-    document.getElementById("objectEditDiv").style = ((cursor.type == 2) ? "display: block" : "display: none");
+    var divArray = ["tileSelect", "selectPalate", "objectEditDiv", "editLevelDimensionsDiv"];
+
+    for (var i = 0; i < divArray.length; i++)
+    {
+        document.getElementById(divArray[i]).style = ((cursor.type == i)) ? "display: block": "display: none";
+    }
 })
 
 document.getElementById("canvas").addEventListener('mousedown', function(e) {
@@ -73,6 +66,38 @@ document.getElementById("canvas").addEventListener('mousedown', function(e) {
         }
 
         updateObjectEditArea(i);
+    } else if (cursor.type == 4)
+    {
+        for (var i = 0; i < objects.length; i++)
+        {
+            var object = objects[i];
+            var cursorX = camera.x+e.offsetX;
+            var cursorY = camera.y+e.offsetY;
+            if ((object.x<cursorX) && ((object.x+30)>cursorX)
+                && (object.y<cursorY) && ((object.y+30)>cursorY))
+            {
+                if (cursor.id == -1)
+                {
+                    cursor.id = i;
+                    break;
+                } else {
+                    if (!objects[cursor.id].name)
+                    {
+                        objects[cursor.id].name = latestConnectionName+1;
+                        latestConnectionName++;
+                    }
+                    if (!object.name)
+                    {
+                        object.name = latestConnectionName+1;
+                        latestConnectionName++;
+                    }
+
+                    connections.push({input: objects[cursor.id].name, output: object.name})
+                    cursor.id = -1;
+                    break;
+                }
+            }
+        }
     }
 })
 document.getElementById("canvas").addEventListener('mousemove', function(e) {
@@ -134,20 +159,26 @@ function loadLevel(name)
     }
 
     data = JSON.parse(data);
+    data = convertFormat(data[0], 3, data);
 
-    if (data[0] == 1) {
-        level = data[3];
-        objects = data[4];
-        levelStats.height = data[2];
-        levelStats.width  = data[1];
-    } else {
-        levelStats.width = data[0].length;
-        levelStats.height = data.length;
-        level = data;
-        objects = [];
-        saveLevel(name1);
-    }
+    level = data[3];
+    objects = data[4];
+    connections = data[5];
+    levelStats.height = data[2];
+    levelStats.width  = data[1];
     updateNameDropdown();
+
+    document.getElementById("inputLevel_height").value = levelStats.height;
+    document.getElementById("inputLevel_width" ).value = levelStats.width ;
+
+    latestConnectionName = 0;
+    for (var i = 0; i < objects.length; i++)
+    {
+        if (objects[i].name > latestConnectionName)
+        {
+            latestConnectionName = objects[i].name;
+        }
+    }
 }
 
 function updateNameDropdown (name)
@@ -208,12 +239,17 @@ function placeObject(x,y,type)
             }
         case 1:
             {
-                object.state = {velx: 0, vely: 0, sizeX: 30, sizeY: 30, color: "FF0000", grabbable: true, colTimer: 0};
+                object.state = {velx: 0, vely: 0, sizeX: 30, sizeY: 30, color: "#FF0000", grabbable: true, colTimer: 0};
                 break;
             }
         case 2:
             {
-                object.state = {cubeIndex: 0, color: "FF0000"};
+                object.state = {cubeIndex: 0, color: "#FF0000"};
+                break;
+            }
+        case 3:
+            {
+                object.state = {color: "#FF0000", range: 5};
                 break;
             }
     }
@@ -226,7 +262,7 @@ function placeObject(x,y,type)
 
 }
 
-var objectSizes = [[90,30],[30,30],[90,60]]
+var objectSizes = [[90,30],[30,30],[90,60],[30,30]]
 
 updateNameDropdown();
 
@@ -351,6 +387,10 @@ function renderStateVar (varName)
             return 2;
         case "colTimer":
             return 2;
+        case "range":
+            return 1;
+        case "on":
+            return 2;
         default: 
             console.log("NON DEFINED IN OBJECT EDIT MENU: " + varName)
             return 0;
@@ -361,3 +401,35 @@ function submitObjectEditInput()
 {
     objects[lastSelectedObject].state[selectedVar] = document.getElementById("objectEditInput").value;
 }
+
+function submitLevelStat(stat)
+{
+    levelStats[stat] = document.getElementById("inputLevel_"+stat).value;
+
+    if (stat == "height" || stat == "width")
+    {
+        var newLevel = [];
+        for (var j = 0; j < levelStats.height; j++)
+        {
+            var newArray = [];
+            for (var i = 0; i < levelStats.width; i++)
+            {
+                newArray.push(level[j][i]);
+            }
+
+            newLevel.push(newArray);
+        }
+
+        level = newLevel;
+
+        for (var i = 0; i < objects.length; i++)
+        {
+            if (objects[i].x > levelStats.width*30 && objects[i].y > levelStats.height*30)
+            {
+                objects.splice(i, 1);
+                i--;
+            }
+        }
+    }
+}
+

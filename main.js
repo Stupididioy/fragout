@@ -4,6 +4,8 @@ var level = [];
 
 var objects = [];
 
+var connections = [];
+
 var levelStats = {width: 40, height: 40}
 
 var levelEditing = false;

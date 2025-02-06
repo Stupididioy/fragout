@@ -16,7 +16,7 @@
         <br>
         <image src="cursors.png" id="cursorPalate"></image>
         <br>
-        <!--<img src="world.png" id="selectPalate">-->
+        <img src="world.png" id="tileSelect">
         <canvas id="selectPalate" width="360" height="300"></canvas>
 
         <div id="objectEditDiv" width="600px">
@@ -33,10 +33,16 @@
                 <button onclick="submitObjectEditInput()">Submit</button>
             </div>
         </div>
+        <div id="editLevelDimensionsDiv">
+            <input id="inputLevel_width">  <button onclick="submitLevelStat('width')" >Submit</button>
+            <br>
+            <input id="inputLevel_height"> <button onclick="submitLevelStat('height')">Submit</button>
+        </div>
         </div>
         <script src="main.js"></script>
         <script src="render.js"></script>
         <script src="physics.js"></script>
         <script src="levelEditor.js"></script>
+        <script src="levelFormats.js"></script>
     </body>
 </html>
