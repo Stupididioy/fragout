@@ -14,8 +14,8 @@ function updateCollisions() {
         for (var i = 0; i < levelStats.width; i++)
         {
             var tile = level[j][i];
-            if (tile > 5) {
-                hitBoxes.push({x1:i*30,x2:i*30+30,y1:j*30,y2:j*30+30,type:0});
+            if (((Math.floor(tile/6)) % 2)) {
+                hitBoxes.push({x1:i*30,x2:i*30+30,y1:j*30,y2:j*30+30,type:-1});
                 continue;
             }
             continue;
@@ -32,20 +32,36 @@ function updateCollisions() {
         {
             case 0:
                 {
-                    hitBoxes.push({x1:object.x+8, x2:object.x+82, y1: object.y+23, y2: object.y+30, type: 0})
+                    hitBoxes.push({x1:object.x+8, x2:object.x+82, y1: object.y+23, y2: object.y+30, type: i})
                     break;
                 }
             case 1:
                 {
-                    hitBoxes.push({x1:object.x, x2:object.x+30, y1: object.y, y2: object.y+30, type: 0})
+                    hitBoxes.push({x1:object.x, x2:object.x+30, y1: object.y, y2: object.y+30, type: i})
                     break;
                 }
             case 2:
                 {
-                    hitBoxes.push({x1: object.x, x2: object.x+90, y1: object.y, y2: object.y+60, type: 0});
+                    hitBoxes.push({x1: object.x, x2: object.x+90, y1: object.y, y2: object.y+60, type: i});
                     break;
                 }
-                
+            case 3:
+                {
+                    hitBoxes.push({x1: object.x, x2: object.x+30, y1: object.y, y2: object.y+12, type: i});
+                    break;
+                }
+            case 4:
+            case 5: // SWITCH CASE FALLTHROUGH FTW!!!
+                {
+                    hitBoxes.push({
+                        x1: object.x + (object.state.direction == 1)*20,
+                        x2: object.x + 30 - (object.state.direction == 3)*20,
+                        y1: object.y + 20*(object.state.direction == 2),
+                        y2: object.y + 30 - 20*(object.state.direction == 0),
+                        type: i
+                    });
+                    break;
+                }
         }
     }
 }
@@ -113,6 +129,13 @@ function playerPhysics() {
         object.state.velx = (targetVec.x-object.x)/2;
         object.state.vely = (targetVec.y-object.y)/2;
     }
+
+    if (player.y > 30*levelStats.height)
+    {
+        loadLevel(currentLevel);
+        console.log(mainObjectCount);
+        initGameMode();
+    }
 }
 
 function getPlayerCollision() {
@@ -121,6 +144,17 @@ function getPlayerCollision() {
 
 function handleObjects()
 {
+    for (var i = 0; i < objects.length; i++) // pre processing loop cause laser catchers are evil
+    {
+        var object = objects[i];
+        switch (object.type)
+        {
+            case 5: // laser catcher
+            {
+                object.state.on = false; // it's OFF!!
+            }
+        }
+    }
     for (var i = 0; i < objects.length; i++)
     {
         var object = objects[i];
@@ -135,6 +169,9 @@ function handleObjects()
                     {
                 
                         loadLevel(object.state.exit);
+                        initGameMode();
+
+                        player = {x: 35, y:-50, velx: 0, vely: 0};
                     }
 
                     if (testCollision(getPlayerCollision(),
@@ -187,6 +224,13 @@ function handleObjects()
                                 object.state.on = true;
                             }
                         }
+                    }
+                }
+            case 4: // laser shooter
+                {
+                    if (object.state.activated)
+                    {
+                        handleLaser(object);
                     }
                 }
         }
@@ -286,10 +330,6 @@ function pressE()
             }
         }
     }
-
-    if (d >= 64)
-    {
-    }
 }
 
 function tickConnections()
@@ -329,4 +369,70 @@ function tickConnections()
                 ? true : false;
         }
     }
+}
+
+function handleLaser(object)
+{
+    ctx.fillStyle = "#FF0000"
+    var laser = {x: object.x+15, y: object.y+15, dir: object.state.direction};
+    var dx = -Math.sin(Math.PI*laser.dir/2)*2;
+    var dy = Math.cos(Math.PI*laser.dir/2)*2;
+
+    var length = 0;
+    var done = false;
+    while ((length < 1500) && !done)
+    {
+        ctx.fillRect(laser.x-camera.x, laser.y-camera.y, 2, 2);
+
+        laser.x += dx;
+        laser.y += dy;
+
+        var colList = touchingGround ({x1: laser.x, x2: laser.x + 2,
+            y1: laser.y, y2: laser.y + 2});
+        for (var j = 0; j < colList.length; j++)
+        {
+            var col = hitBoxes[colList[j]];
+            var object2 = objects[col.type];
+
+            if (col.type == -1) // if touching a wall or w/e
+            {
+                done = true;
+                break;
+            }
+
+            if (object2.type == 5) // got caught by laser catcher
+            {
+                done = true;
+                object2.state.on = true;
+                break;
+            } else if (object2.type == 1) {  //touched any cube
+                var x = laser.dir;
+                switch (Number(object2.state.type))
+                {
+                    case 0:
+                        done = true;
+                        break;
+                    case 1:
+                        laser.dir = 6*x*x+1-4/3*x*x*x-17/3*x;
+                        dx = -Math.sin(Math.PI*laser.dir/2)*2;
+                        dy = Math.cos(Math.PI*laser.dir/2)*2;
+                        laser.x = 8*dx+15+object2.x;
+                        laser.y = 8*dy+15+object2.y;
+                        break;
+                    case 2:
+                        laser.dir = 3-x;
+                        dx = -Math.sin(Math.PI*laser.dir/2)*2;
+                        dy = Math.cos(Math.PI*laser.dir/2)*2;
+                        laser.x = 8*dx+15+object2.x;
+                        laser.y = 8*dy+15+object2.y;
+                        break;
+                }
+            } else {  // touched any other object type
+                done = true;
+                break;
+            }
+        }
+        length++;
+    }
+
 }

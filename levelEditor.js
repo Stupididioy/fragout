@@ -1,4 +1,4 @@
-var cursor = {x: 0, y: 0, type: -1, id: 0};
+var cursor = {x: 0, y: 0, oldx: 0, oldy: 0, type: -1, id: 0};
 
 var latestConnectionName = 0;
 
@@ -11,7 +11,7 @@ document.getElementById("tileSelect").addEventListener('mousedown', function (ev
     cursor.id+= 12*Math.floor((event.offsetY)/30);
 })
 
-var placeableObjects = [0,2,3];
+var placeableObjects = [0,2,3,4,5];
 document.getElementById("cursorPalate").addEventListener('mousedown', function (event) 
 {
     cursor.type = Math.floor(event.offsetX/30);
@@ -23,10 +23,13 @@ document.getElementById("cursorPalate").addEventListener('mousedown', function (
     switch (cursor.type)
     {
         case 1: {
-            selectPalate.width = 120;
+            selectPalate.width = 150;
             selectPalate.height= 30;
-            selectPalateCTX.drawImage(objectPNG,90,150,90,30,0 ,0,30,30);
-            selectPalateCTX.drawImage(objectPNG, 0,120,90,60,30,0,30,30);
+            selectPalateCTX.drawImage(objectPNG, 90,150,90,30, 0 , 0,30,30);
+            selectPalateCTX.drawImage(objectPNG,  0,120,90,60, 30, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG, 90,  0,30,30, 60, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG,480,120,30,30, 90, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG,420,150,30,30,120, 0,30,30);
         }
     }
     
@@ -44,6 +47,7 @@ document.getElementById("canvas").addEventListener('mousedown', function(e) {
     if (cursor.type == 0 && cursor.id != -1) //tiles/blocks
     {
         level[y][x] = cursor.id;
+        cursor.oldx = cursor.x; cursor.oldy = cursor.y;
     } else if (cursor.type == 1) //placing entities
     {
         placeObject(30*Math.floor((camera.x+e.offsetX)/30),
@@ -104,6 +108,36 @@ document.getElementById("canvas").addEventListener('mousemove', function(e) {
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
 })
+document.getElementById("canvas").addEventListener('mouseup', function (e) {
+    if (cursor.type == 0 && cursor.id != -1)
+    {
+        var x1 = Math.floor((cursor.oldx+camera.x)/30);
+        var x2 = Math.floor((cursor.x   +camera.x)/30);
+        var y1 = Math.floor((cursor.oldy+camera.y)/30);
+        var y2 = Math.floor((cursor.y   +camera.y)/30);
+
+        if (x2 < x1)
+        {
+            var u = x2;
+            x2 = x1;
+            x1 = u;
+        }
+        if (y2 < y1)
+        {
+            var u = y2;
+            y2 = y1;
+            y1 = u;
+        }
+
+        for (var j = y1; j <= y2; j++)
+        {
+            for (var i = x1; i <= x2; i++)
+            {
+                level[j][i] = cursor.id;
+            }
+        }
+    }
+})
 
 document.getElementById("ModeButton").addEventListener('click', function(e) {
     levelEditing = !levelEditing;
@@ -140,7 +174,7 @@ function saveLevel(name)
         name1 = document.getElementById("levelName").value;
     }
     updateNameDropdown(name1);
-    let data = [1, levelStats.width, levelStats.height, level, objects];
+    let data = [1, levelStats.width, levelStats.height, level, objects, connections];
     localStorage.setItem("FragOut_"+name1, JSON.stringify(data));
 }
 
@@ -159,7 +193,7 @@ function loadLevel(name)
     }
 
     data = JSON.parse(data);
-    data = convertFormat(data[0], 3, data);
+    //data = convertFormat(data[0], 3, data);
 
     level = data[3];
     objects = data[4];
@@ -179,11 +213,20 @@ function loadLevel(name)
             latestConnectionName = objects[i].name;
         }
     }
+
+    currentLevel = name;
+
+    mainObjectCount = objects.length;
+
+    if (!connections)
+    {
+        connections = [];
+    }
 }
 
 function updateNameDropdown (name)
 {
-    if (name) 
+    if (name)
     {
         let hasName = false;
         let levelList = localStorage.getItem("FragOutLevelList");
@@ -232,24 +275,34 @@ function placeObject(x,y,type)
     var index = objects.length;
     var object = {x: x, y: y, type: type, state: {}};
     switch (type) {
-        case 0: // exit tele
+        case 0: // exiobjectt tele
             {
                 object.state = {activated: false, exit: "TestLevel0"};
                 break;
             }
         case 1:
             {
-                object.state = {velx: 0, vely: 0, sizeX: 30, sizeY: 30, color: "#FF0000", grabbable: true, colTimer: 0};
+                object.state = {velx: 0, vely: 0, sizeX: 30, sizeY: 30, color: "#FF0000", grabbable: true, colTimer: 0, type: 0};
                 break;
             }
         case 2:
             {
-                object.state = {cubeIndex: 0, color: "#FF0000"};
+                object.state = {cubeIndex: 0, color: "#FF0000", type: 0};
                 break;
             }
         case 3:
             {
                 object.state = {color: "#FF0000", range: 5};
+                break;
+            }
+        case 4:
+            {
+                object.state = {activated: false, direction: 3};
+                break;
+            }
+        case 5:
+            {
+                object.state = {on: false, direction: 1};
                 break;
             }
     }
@@ -262,13 +315,9 @@ function placeObject(x,y,type)
 
 }
 
-var objectSizes = [[90,30],[30,30],[90,60],[30,30]]
+var objectSizes = [[90,30],[30,30],[90,60],[30,30],[30,30],[30,30]]
 
 updateNameDropdown();
-
-objects[placeObject(180,36*30,0)].state.activated = true;
-
-objects[placeObject(150,10*30,1)].state.color = "#0000FF";
 
 function initPalate()
 {
@@ -337,22 +386,15 @@ function updateObjectEditArea()
 
 function selectStateVar (varName)
 {
-    console.log("----------");
-    console.log(varName);
     var oESelect = document.getElementById("objectEditMode");
     var oEInput = document.getElementById("objectEditInput");
 
     var children = oESelect.children;
-    console.log(children);
 
     oEInput.value = objects[lastSelectedObject].state[selectedVar];
 
     for (i of children)
     {
-        console.log("-----");
-        console.log(i.innerText);
-        console.log(varName);
-        console.log(varName == i.innerText);
         if (i.innerText == varName)
         {
             i.style = "padding: 5px; border: 1px solid black; background-color: grey";
@@ -391,6 +433,10 @@ function renderStateVar (varName)
             return 1;
         case "on":
             return 2;
+        case "direction":
+            return 1;
+        case "type":
+            return 1;
         default: 
             console.log("NON DEFINED IN OBJECT EDIT MENU: " + varName)
             return 0;
@@ -433,3 +479,29 @@ function submitLevelStat(stat)
     }
 }
 
+loadLevel("MainLevel1");
+
+function deleteObject()
+{
+    if (cursor.type == 2 && cursor.id != -1)
+    {
+        var object = objects[cursor.id];
+
+        if (connections)
+        {
+            for (var i = 0; i < connections.length; i++)
+            {
+                var conn = connections[i];
+                if (conn.input == object.name || conn.output == object.name)
+                {
+                    connections.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        objects.splice(cursor.id, 1);
+
+        cursor.id = -1;
+    }
+}

@@ -2,6 +2,8 @@ var ctx = document.getElementById("canvas").getContext("2d");
 
 var level = [];
 
+var currentLevel = "";
+
 var objects = [];
 
 var connections = [];
@@ -55,7 +57,7 @@ document.addEventListener('keydown', function(event) {
     {
         if ((cursor.type == 2) && (cursor.id != -1))
         {
-            objects.splice(cursor.id, 1);
+            deleteObject();
         }
     }
 });
@@ -93,8 +95,11 @@ function initGameMode()
             {
                 object.state.cubeIndex = objects.length;
                 var cube = placeObject(object.x+30, object.y-30, 1);
-                cube.color = object.state.color;
+                objects[cube].state.color = object.state.color;
+                objects[cube].state.type  = object.state.type;
             }
         }
     }
+
+    player = {x: 35, y:-50, velx: 0, vely: 0};
 }

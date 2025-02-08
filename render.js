@@ -1,5 +1,5 @@
 var coolcounter = 0;
-var player = {x: 21, y:30*10, velx: 0, vely: 0};
+var player = {x: 35, y:-50, velx: 0, vely: 0};
 
 function renderObjectAny(context, object) {
 
@@ -19,11 +19,21 @@ function renderObjectAny(context, object) {
         }
         case 1:
         {
-            context.drawImage(objectPNG,
-                120,90,
-                30,30,
-                objectRenderX,objectRenderY,
-                30,30);
+            if (object.state.type == 0) // normal cube
+            {
+                context.drawImage(objectPNG,
+                    120,90,
+                    30,30,
+                    objectRenderX,objectRenderY,
+                    30,30);
+            } else { // laser cube
+                context.drawImage(objectPNG,
+                    360+30*object.state.type,180,
+                    30,30,
+                    objectRenderX,objectRenderY,
+                    30,30);
+
+            }
             context.fillStyle = object.state.color;
             context.fillRect(objectRenderX+11, objectRenderY+11, 8, 8);
 
@@ -44,13 +54,32 @@ function renderObjectAny(context, object) {
         case 3:
         {
             context.drawImage(objectPNG,
-                90+30*object.state.on,0,
+                120-30*object.state.on,0,
                 30,30,
                 objectRenderX,objectRenderY,
                 30,30);
             context.fillStyle = object.state.color;
             context.fillRect(objectRenderX+11, objectRenderY+2, 8, 4);
+            context.fillRect(objectRenderX+14, objectRenderY+18, 2, 12+(object.state.range-1)*30);
 
+            break;
+        }
+        case 4:
+        {
+            context.drawImage(objectPNG,
+                390+30*object.state.direction,120,
+                30,30,
+                objectRenderX,objectRenderY,
+                30,30);
+            break;
+        }
+        case 5:
+        {
+            context.drawImage(objectPNG,
+                390+30*object.state.direction,150,
+                30,30,
+                objectRenderX,objectRenderY,
+                30,30);
             break;
         }
     }
@@ -63,7 +92,7 @@ function updateCamera() {
 
 function editorCameraControls()
 {
-    var down = 5*keysDown.downArrow -  5*keysDown.upArrow;
+    var down = 5*keysDown.downArrow  - 5*keysDown.upArrow;
     var right= 5*keysDown.rightArrow - 5*keysDown.leftArrow;
 
     camera.x+=right;
@@ -90,9 +119,6 @@ function renderConnections(context)
                 output = objects[j];
             }
         }
-
-        //console.assert(input); console.assert(output);
-        //console.log(input.x + "," + input.y + ",::::G," + output.x + "," + output.y);
 
         var inputx = input.x-camera.x
         var inputy = input.y-camera.y
@@ -147,10 +173,13 @@ function render() {
         ctx.fillRect(player.x-camera.x,player.y-camera.y,20,40);
     
         playerPhysics();
-
-        tickConnections();
         
         handleObjects();
+
+        if (connections)
+        {
+            tickConnections();
+        }
     } else {
     
         if ((cursor.type == 2 || cursor.type == 4) && cursor.id >= objects.length)
@@ -168,8 +197,10 @@ function render() {
         }
     }
 
-    renderConnections(ctx);
-
+    if (connections)
+    {
+        renderConnections(ctx);
+    }
 }
 
 
