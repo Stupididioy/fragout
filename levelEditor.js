@@ -11,7 +11,7 @@ document.getElementById("tileSelect").addEventListener('mousedown', function (ev
     cursor.id+= 12*Math.floor((event.offsetY)/30);
 })
 
-var placeableObjects = [0,2,3,4,5];
+var placeableObjects = [0,2,3,4,5,6];
 document.getElementById("cursorPalate").addEventListener('mousedown', function (event) 
 {
     cursor.type = Math.floor(event.offsetX/30);
@@ -23,13 +23,14 @@ document.getElementById("cursorPalate").addEventListener('mousedown', function (
     switch (cursor.type)
     {
         case 1: {
-            selectPalate.width = 150;
+            selectPalate.width = 180;
             selectPalate.height= 30;
             selectPalateCTX.drawImage(objectPNG, 90,150,90,30, 0 , 0,30,30);
             selectPalateCTX.drawImage(objectPNG,  0,120,90,60, 30, 0,30,30);
             selectPalateCTX.drawImage(objectPNG, 90,  0,30,30, 60, 0,30,30);
             selectPalateCTX.drawImage(objectPNG,480,120,30,30, 90, 0,30,30);
             selectPalateCTX.drawImage(objectPNG,420,150,30,30,120, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG,510,120,60,90,150, 0,30,30);
         }
     }
     
@@ -305,6 +306,10 @@ function placeObject(x,y,type)
                 object.state = {on: false, direction: 1};
                 break;
             }
+        case 6:
+            {
+                object.state = {blewUp: false, primed: false};
+            }
     }
 
     objects.push(object);
@@ -315,7 +320,7 @@ function placeObject(x,y,type)
 
 }
 
-var objectSizes = [[90,30],[30,30],[90,60],[30,30],[30,30],[30,30]]
+var objectSizes = [[90,30],[30,30],[90,60],[30,30],[30,30],[30,30],[60,90]];
 
 updateNameDropdown();
 
@@ -437,6 +442,10 @@ function renderStateVar (varName)
             return 1;
         case "type":
             return 1;
+        case "blewUp":
+            return 2;
+        case "primed":
+            return 2;
         default: 
             console.log("NON DEFINED IN OBJECT EDIT MENU: " + varName)
             return 0;

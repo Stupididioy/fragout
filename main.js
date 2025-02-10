@@ -96,7 +96,12 @@ function initGameMode()
                 object.state.cubeIndex = objects.length;
                 var cube = placeObject(object.x+30, object.y-30, 1);
                 objects[cube].state.color = object.state.color;
-                objects[cube].state.type  = object.state.type;
+                if (object.state.type == undefined)
+                {
+                    object.state.type = 0;
+                    objects[cube].state.type = 0;
+                }
+                objects[cube].state.type = object.state.type;
             }
         }
     }

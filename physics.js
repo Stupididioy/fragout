@@ -30,27 +30,27 @@ function updateCollisions() {
 
         switch (object.type)
         {
-            case 0:
+            case 0: // exit teleporter
                 {
                     hitBoxes.push({x1:object.x+8, x2:object.x+82, y1: object.y+23, y2: object.y+30, type: i})
                     break;
                 }
-            case 1:
+            case 1: // cube
                 {
                     hitBoxes.push({x1:object.x, x2:object.x+30, y1: object.y, y2: object.y+30, type: i})
                     break;
                 }
-            case 2:
+            case 2: // cube dropper
                 {
                     hitBoxes.push({x1: object.x, x2: object.x+90, y1: object.y, y2: object.y+60, type: i});
                     break;
                 }
-            case 3:
+            case 3: // cube scanner
                 {
                     hitBoxes.push({x1: object.x, x2: object.x+30, y1: object.y, y2: object.y+12, type: i});
                     break;
                 }
-            case 4:
+            case 4: // laser catcher & reciever
             case 5: // SWITCH CASE FALLTHROUGH FTW!!!
                 {
                     hitBoxes.push({
@@ -60,6 +60,17 @@ function updateCollisions() {
                         y2: object.y + 30 - 20*(object.state.direction == 0),
                         type: i
                     });
+                    break;
+                }
+            case 6: // big bomb
+                {
+                    if (!object.state.blewUp)
+                    {
+                        hitBoxes.push({
+                            x1: object.x, x2: object.x+60,
+                            y1: object.y+15, y2: object.y+90,type: i
+                        });
+                    }
                     break;
                 }
         }
@@ -142,6 +153,8 @@ function getPlayerCollision() {
     return {x1: player.x, x2: player.x+20, y1: player.y, y2:player.y+40};
 }
 
+var explodableWalls = [34];
+var explosionResult = {34: 24};
 function handleObjects()
 {
     for (var i = 0; i < objects.length; i++) // pre processing loop cause laser catchers are evil
@@ -233,6 +246,34 @@ function handleObjects()
                         handleLaser(object);
                     }
                 }
+                //laser receiver is skipped over here.
+            case 6: // big bomb
+                {
+                    if (object.state.primed)
+                    {
+                        var baseX = object.x + 30;
+                        var baseY = object.y + 45;
+                        for (var j = 0; j < levelStats.height; j++)
+                        {
+                            for (var i = 0; i < levelStats.width; i++)
+                            {
+                                if (explodableWalls.includes(level[j][i]))
+                                {
+                                    if (Math.sqrt(
+                                    Math.pow(i*30+15-baseX, 2) + 
+                                    Math.pow(j*30+15-baseY, 2)) < 70)
+                                    {
+                                        level[j][i] = explosionResult[level[j][i]];
+                                    }
+                                }
+                            }
+                        }
+                        object.state.primed = false;
+                        object.state.blewUp = true;
+
+                        object.x = object.y = -100;
+                    }
+                }
         }
     }
 }
@@ -286,8 +327,6 @@ function pressE()
     }
     // above code says, if player holding object, drop it
 
-    // dis means displacement, not "this" in a new york accent!!!
-
     var disVec = {x: cursor.x - player.x - 10 + camera.x, y: cursor.y - player.y - 20 + camera.y};
 
     var disLength = Math.sqrt(Math.pow(disVec.x,2)+Math.pow(disVec.y,2)); //disVec modulus
@@ -314,7 +353,7 @@ function pressE()
                 (object.x+objectSizes[object.type][0] > curCheckLocation.x) && (object.x < curCheckLocation.x) &&
                 (object.y+objectSizes[object.type][1] > curCheckLocation.y) && (object.y < curCheckLocation.y)
             ) {
-                if ([1,2,3].includes(object.type)) {
+                if (1 == object.type) {
                     if (object.state.grabbable) {
                         playerGrabbedObject = i;
                         loopDone = true;
@@ -427,7 +466,11 @@ function handleLaser(object)
                         laser.y = 8*dy+15+object2.y;
                         break;
                 }
-            } else {  // touched any other object type
+            } else if (object2.type == 6) //lighting a bomb!!!
+            {
+                object2.state.primed = true;
+            }
+            else {  // touched any other object type
                 done = true;
                 break;
             }

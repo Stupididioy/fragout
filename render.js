@@ -82,6 +82,17 @@ function renderObjectAny(context, object) {
                 30,30);
             break;
         }
+        case 6:
+        {
+            if (!object.state.blewUp) {
+                context.drawImage(objectPNG,
+                    510, 120,
+                    60,90,
+                    objectRenderX,objectRenderY,
+                    60,90);
+            } // blew up bombs dont exist anymore (most of the time)
+            break;
+        }
     }
 }
 
