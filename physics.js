@@ -73,6 +73,17 @@ function updateCollisions() {
                     }
                     break;
                 }
+            case 7: // door
+                {
+                    hitBoxes.push({x1: object.x+10, x2: object.x + 20, y1: object.y, y2: object.y+90-object.state.meter, type: i});
+                    break;
+                }
+                // bouncy goo has no collisions
+            case 9: // goo pipe
+                {
+                    hitBoxes.push({x1: object.x, x2: object.x+90, y1: object.y, y2: object.y+30, type: i});
+                    break;
+                }
         }
     }
 }
@@ -116,8 +127,23 @@ function playerPhysics() {
     }
 
     player.y+=player.vely;
+    var bounce = 0;
+    for (var i = 0; i < objects.length; i++)
+    {
+        var object = objects[i];
+        if (object.type == 8 && player.vely > 5)
+        {
+            if (((object.x-15) < player.x) && ((object.x+105-20) > player.x) &&
+                ((object.y-41-player.vely < player.y)) && (object.y > player.y))
+            {
+                player.vely*=-1;
+                bounce = 1;
+            }
+
+        }
+    }
     if (touchingGround(getPlayerCollision()).length) {
-        player.y-=player.vely;
+        player.y-=(player.vely)*(1-2*bounce);
         player.vely = 0;
     }
 
@@ -245,8 +271,9 @@ function handleObjects()
                     {
                         handleLaser(object);
                     }
+                    break;
                 }
-                //laser receiver is skipped over here.
+                //laser receiver doesnt do anything lol
             case 6: // big bomb
                 {
                     if (object.state.primed)
@@ -271,8 +298,73 @@ function handleObjects()
                         object.state.primed = false;
                         object.state.blewUp = true;
 
+                        for (var i = 0; i < 20; i++)
+                        {
+                            var degree = Math.random();
+                            var dx = 5*Math.cos(degree*2*3.14159)*(1-Math.pow(Math.random(),2));
+                            var dy = 5*Math.sin(degree*2*3.14159)*(1-Math.pow(Math.random(),2));
+
+                            var px = object.x+30;
+                            var py = object.y+45;
+                            
+                            object.state.particles[i] = {dx: dx, dy: dy, x: px, y: py, timer: 30};
+                        }
+
+                        object.state.particlesDone = false;
                         object.x = object.y = -100;
                     }
+
+                    if (!object.state.particlesDone)
+                    {
+                        handleBombParticles(object);
+                        // for (var i = 0; i < 20; i++)
+                    }
+
+                    break;
+                }
+            case 7: // door
+                {
+                    var x = object.state.meter;
+                    object.state.meter = x + 5*Math.sign(90*object.state.activated - x);
+                    break;
+                }
+                // bouncy goo dont do nothin'
+            case 9: // goo pipe
+                {
+                    if (object.state.activated && object.state.timer == 0)
+                    {
+                        object.state.timer = 6;
+
+                        object.state.goo[object.state.goo.length] = {x: object.x, y: object.y+30};
+                    }
+
+                    object.state.timer -= (object.state.timer) ? 1 : 0;
+
+                    if (object.state.goo.length)
+                    {
+                        for (var i = 0; i < object.state.goo.length; i++)
+                        {
+                            var goo = object.state.goo[i];
+                            goo.y+=5;
+
+                            var gooCol = {x1: goo.x+15, x2: goo.x+90-15, y1: goo.y, y2: goo.y+30};
+                            if (goo.y > 30 * levelStats.height || touchingGround(gooCol).length)
+                            {
+                                object.state.goo.splice(i,1);
+                                i--;
+                                continue;
+                            }
+
+                            if (testCollision(gooCol, getPlayerCollision()))
+                            {
+                                loadLevel(currentLevel);
+                                console.log(mainObjectCount);
+                                initGameMode(); 
+                            }
+                        }
+                        console.log(object.state.goo);
+                    }
+                    break;
                 }
         }
     }
@@ -289,29 +381,37 @@ function handleObjFalling(object, i) //object.state must have velx, vely,
         y1: object.y,
         y2: object.y+object.state.sizeY} };
 
-
     object.state.velx = Math.min(15,Math.max(object.state.velx,-15))
     object.state.vely = Math.min(15,Math.max(object.state.vely,-15))
     object.state.vely++;
 
     var collisionThreshold = (playerGrabbedObject != i) ? 1 : 0
     
+    function colliding() {
+        if (collisionThreshold)
+        {
+            return (touchingGround(getCollision(object)).length>collisionThreshold) || testCollision(getCollision(object), getPlayerCollision());
+        }
+        else {
+            return (touchingGround(getCollision(object)).length>collisionThreshold);
+        }
+    }
     object.x+=object.state.velx;
-    if (touchingGround(getCollision(object)).length>collisionThreshold)
+    if (colliding())
     {
         object.x-=object.state.velx;
         object.state.velx = 0;
     }
 
     object.y+=object.state.vely;
-    if (touchingGround(getCollision(object)).length>collisionThreshold)
+    if (colliding())
     {
         object.y-=object.state.vely;
         object.state.vely = 0;
     }
 
     var collision1 = {x1: object.x+1, x2: object.x+object.state.sizeX-1,
-        y1: object.y+object.state.sizeY-1, y2: object.y+object.state.sizeY+10};
+        y1: object.y+object.state.sizeY-1, y2: object.y+object.state.sizeY+1};
 
     if (touchingGround(collision1).length)
     {
@@ -452,7 +552,7 @@ function handleLaser(object)
                         done = true;
                         break;
                     case 1:
-                        laser.dir = 6*x*x+1-4/3*x*x*x-17/3*x;
+                        laser.dir = (1-x)%4;
                         dx = -Math.sin(Math.PI*laser.dir/2)*2;
                         dy = Math.cos(Math.PI*laser.dir/2)*2;
                         laser.x = 8*dx+15+object2.x;
@@ -475,7 +575,52 @@ function handleLaser(object)
                 break;
             }
         }
+
+        if (laser.x > levelStats.width * 30 && laser.x < 0 && laser.y > levelStats.height * 30 && laser.y < 0) // if touching a wall or w/e
+        {
+            done = true;
+            break;
+        }
         length++;
     }
 
+}
+
+function handleBombParticles(object)
+{
+    for (var i = 0; i < 20; i++)
+    {
+        if (object.state.particles) {
+            var p = object.state.particles[i];
+    
+            p.dx *= 15/16;
+            p.dy *= 15/16;
+    
+            p.timer--;
+    
+            if (p.timer == 0)
+            {
+                object.state.particlesDone = true;
+                break;
+            }
+    
+            //var orange = 20-Math.pow(p.timer, 5)/160000;
+
+            var yellowMult = (30-p.timer)/30;
+            ctx.strokeStyle = "rgb(" + 255 + "," + 255*yellowMult + ",0)";
+            ctx.fillStyle =   "rgb(" + 255 + "," + 255*yellowMult + ",0)";
+            ctx.lineWidth = 3;
+    
+            ctx.beginPath();
+    
+            ctx.moveTo(p.x - camera.x, p.y - camera.y);
+    
+            p.x += p.dx;
+            p.y += p.dy;
+    
+            ctx.arc(p.x-camera.x, p.y-camera.y, 1, 0, 2*Math.PI);
+    
+            ctx.stroke();
+        }
+    }
 }

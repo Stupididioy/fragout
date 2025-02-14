@@ -106,5 +106,7 @@ function initGameMode()
         }
     }
 
-    player = {x: 35, y:-50, velx: 0, vely: 0};
+    player = {x: 50, y:-40, velx: 0, vely: 0};
+
+    playerGrabbedObject = -1;
 }

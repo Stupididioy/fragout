@@ -11,7 +11,7 @@ document.getElementById("tileSelect").addEventListener('mousedown', function (ev
     cursor.id+= 12*Math.floor((event.offsetY)/30);
 })
 
-var placeableObjects = [0,2,3,4,5,6];
+var placeableObjects = [0,2,3,4,5,6,7,8,9];
 document.getElementById("cursorPalate").addEventListener('mousedown', function (event) 
 {
     cursor.type = Math.floor(event.offsetX/30);
@@ -23,14 +23,19 @@ document.getElementById("cursorPalate").addEventListener('mousedown', function (
     switch (cursor.type)
     {
         case 1: {
-            selectPalate.width = 180;
-            selectPalate.height= 30;
+            selectPalate.width  = 270;
+            selectPalate.height =  30;
             selectPalateCTX.drawImage(objectPNG, 90,150,90,30, 0 , 0,30,30);
             selectPalateCTX.drawImage(objectPNG,  0,120,90,60, 30, 0,30,30);
             selectPalateCTX.drawImage(objectPNG, 90,  0,30,30, 60, 0,30,30);
             selectPalateCTX.drawImage(objectPNG,480,120,30,30, 90, 0,30,30);
+            // 4
             selectPalateCTX.drawImage(objectPNG,420,150,30,30,120, 0,30,30);
             selectPalateCTX.drawImage(objectPNG,510,120,60,90,150, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG, 90, 30,30,90,180, 0,30,30);
+            selectPalateCTX.drawImage(objectPNG,210,150,90,30,210, 0,30,30);
+            // 8
+            selectPalateCTX.drawImage(objectPNG,210,120,90,30,240, 0,30,30);
         }
     }
     
@@ -48,7 +53,8 @@ document.getElementById("canvas").addEventListener('mousedown', function(e) {
     if (cursor.type == 0 && cursor.id != -1) //tiles/blocks
     {
         level[y][x] = cursor.id;
-        cursor.oldx = cursor.x; cursor.oldy = cursor.y;
+        cursor.oldx = Math.floor((cursor.x+camera.x)/30);
+        cursor.oldy = Math.floor((cursor.y+camera.y)/30);
     } else if (cursor.type == 1) //placing entities
     {
         placeObject(30*Math.floor((camera.x+e.offsetX)/30),
@@ -112,9 +118,9 @@ document.getElementById("canvas").addEventListener('mousemove', function(e) {
 document.getElementById("canvas").addEventListener('mouseup', function (e) {
     if (cursor.type == 0 && cursor.id != -1)
     {
-        var x1 = Math.floor((cursor.oldx+camera.x)/30);
+        var x1 = cursor.oldx;
         var x2 = Math.floor((cursor.x   +camera.x)/30);
-        var y1 = Math.floor((cursor.oldy+camera.y)/30);
+        var y1 = cursor.oldy;
         var y2 = Math.floor((cursor.y   +camera.y)/30);
 
         if (x2 < x1)
@@ -223,6 +229,8 @@ function loadLevel(name)
     {
         connections = [];
     }
+
+    playerGrabbedObject = -1;
 }
 
 function updateNameDropdown (name)
@@ -276,7 +284,7 @@ function placeObject(x,y,type)
     var index = objects.length;
     var object = {x: x, y: y, type: type, state: {}};
     switch (type) {
-        case 0: // exiobjectt tele
+        case 0: // exit tele
             {
                 object.state = {activated: false, exit: "TestLevel0"};
                 break;
@@ -308,7 +316,23 @@ function placeObject(x,y,type)
             }
         case 6:
             {
-                object.state = {blewUp: false, primed: false};
+                object.state = {blewUp: false, primed: false, particles: [], particlesDone: true};
+                break
+            }
+        case 7:
+            {
+                object.state = {meter: 0, activated: false};
+                break;
+            }
+        case 8:
+            {
+                object.state = {};
+                break;
+            }
+        case 9:
+            {
+                object.state = {activated: false, timer: 0, goo: []};
+                break;
             }
     }
 
@@ -320,7 +344,7 @@ function placeObject(x,y,type)
 
 }
 
-var objectSizes = [[90,30],[30,30],[90,60],[30,30],[30,30],[30,30],[60,90]];
+var objectSizes = [[90,30],[30,30],[90,60],[30,30],[30,30],[30,30],[60,90],[0,0],[0,0],[90,30]];
 
 updateNameDropdown();
 
@@ -445,6 +469,16 @@ function renderStateVar (varName)
         case "blewUp":
             return 2;
         case "primed":
+            return 2;
+        case "meter":
+            return 2;
+        case "particles":
+            return 2;
+        case "particlesDone":
+            return 2;
+        case "timer":
+            return 2;
+        case "goo":
             return 2;
         default: 
             console.log("NON DEFINED IN OBJECT EDIT MENU: " + varName)

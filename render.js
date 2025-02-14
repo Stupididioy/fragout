@@ -5,6 +5,13 @@ function renderObjectAny(context, object) {
 
     var objectRenderX = object.x-camera.x;
     var objectRenderY = object.y-camera.y;
+
+    if (objectRenderX < -objectSizes[object.type][0] || objectRenderX > 600 ||
+        objectRenderY < -objectSizes[object.type][1] || objectRenderY > 450)
+    {
+        return; // if outside of screen, don't render. Rendering is so laggy (crying emoji)
+    }
+
     switch (object.type)
     {
         case 0: //exit teleporter
@@ -17,7 +24,7 @@ function renderObjectAny(context, object) {
                 
             break;
         }
-        case 1:
+        case 1: // any cube
         {
             if (object.state.type == 0) // normal cube
             {
@@ -39,7 +46,7 @@ function renderObjectAny(context, object) {
 
             break;
         }
-        case 2:
+        case 2: // cube dropper
         {
             context.drawImage(objectPNG,
                 0,120,
@@ -51,7 +58,7 @@ function renderObjectAny(context, object) {
 
             break;
         }
-        case 3:
+        case 3: // cube scanner
         {
             context.drawImage(objectPNG,
                 120-30*object.state.on,0,
@@ -64,7 +71,7 @@ function renderObjectAny(context, object) {
 
             break;
         }
-        case 4:
+        case 4: // laser shooter
         {
             context.drawImage(objectPNG,
                 390+30*object.state.direction,120,
@@ -73,7 +80,7 @@ function renderObjectAny(context, object) {
                 30,30);
             break;
         }
-        case 5:
+        case 5: // laser receiver
         {
             context.drawImage(objectPNG,
                 390+30*object.state.direction,150,
@@ -82,7 +89,7 @@ function renderObjectAny(context, object) {
                 30,30);
             break;
         }
-        case 6:
+        case 6: // big bombs
         {
             if (!object.state.blewUp) {
                 context.drawImage(objectPNG,
@@ -93,12 +100,49 @@ function renderObjectAny(context, object) {
             } // blew up bombs dont exist anymore (most of the time)
             break;
         }
+        case 7: // door
+        {
+            context.drawImage(objectPNG,
+                90, 30+object.state.meter,
+                30, 90-object.state.meter,
+                objectRenderX, objectRenderY,
+                30, 90-object.state.meter);
+            break;
+        }
+        case 8: // bouncy goo
+        {
+            context.drawImage(objectPNG,
+                210, 150,
+                90, 30,
+                objectRenderX, objectRenderY,
+                90, 30);
+            break;
+        }
+        case 9: // goo pipe
+        {
+            for (var i = 0; i < object.state.goo.length; i++)
+            {
+                var goo = object.state.goo[i];
+
+                context.drawImage(objectPNG,
+                    300,150,
+                    90,30,
+                    goo.x-camera.x,goo.y-camera.y,
+                    90,30);
+            }
+            context.drawImage(objectPNG,
+                210, 120,
+                90, 30,
+                objectRenderX, objectRenderY,
+                90, 30);
+            break;
+        }
     }
 }
 
 function updateCamera() {
-    camera.x = Math.max(0,Math.min(player.x+10-300,levelStats.width* 30-600));
-    camera.y = Math.max(0,Math.min(player.y+20-225,levelStats.height*30-450));
+    camera.x = Math.max(0,Math.min(Math.round(player.x)+10-300,levelStats.width* 30-600));
+    camera.y = Math.max(0,Math.min(Math.round(player.y)+20-225,levelStats.height*30-450));
 }
 
 function editorCameraControls()
@@ -141,7 +185,7 @@ function renderConnections(context)
         ctx.beginPath();
         ctx.moveTo(inputx,  inputy );
         ctx.quadraticCurveTo(
-            (inputx+outputx)/2, Math.max(inputy, outputy)+1,
+            (inputx+outputx)/2, Math.max(inputy, outputy)+30,
             outputx,outputy);
         //ctx.lineTo(outputx, outputy);
         ctx.stroke();
@@ -160,8 +204,8 @@ function render() {
         editorCameraControls();
     }
 
-    for (var j = 0; j < levelStats.height; j++) {
-        for (var i = 0; i < levelStats.width; i++)
+    for (var j = Math.floor(camera.y/30); j < Math.ceil((camera.y+450)/30); j++) {
+        for (var i = Math.floor(camera.x/30); i < Math.ceil((camera.x+600)/30); i++)
         {
             ctx.drawImage(worldPNG,
                 30*((level[j][i])%12),
@@ -214,15 +258,6 @@ function render() {
     }
 }
 
-
 setInterval(render, 25);
 
 initGameMode();
-
-function testConnections(a, b)
-{
-    objects[0].name = a;
-    objects[1].name = b;
-
-    connections.push({input: a, output: b});
-}
